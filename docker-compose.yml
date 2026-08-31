@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: studxo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: studxo
+      POSTGRES_PASSWORD: studxo_dev_password
+      POSTGRES_DB: studxo
+    ports:
+      - "5433:5432"
+    volumes:
+      - studxo_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  studxo_postgres_data:

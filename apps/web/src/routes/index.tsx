@@ -3,9 +3,11 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 import RootLayout from "@/app/layouts/RootLayout";
 import AuthLayout from "@/app/layouts/AuthLayout";
 import DashboardLayout from "@/app/layouts/DashboardLayout";
+import ProtectedRoute from "@/app/guards/ProtectedRoute";
 
 import LoginPage from "@/features/auth/pages/LoginPage";
 import RegisterPage from "@/features/auth/pages/RegisterPage";
+
 import DashboardPage from "@/features/dashboard/pages/DashboardPage";
 import ChatPage from "@/features/chat/pages/ChatPage";
 import DocumentsPage from "@/features/documents/pages/DocumentsPage";
@@ -17,13 +19,19 @@ export const router = createBrowserRouter([
     path: "/",
     element: <RootLayout />,
     children: [
-      // Default route
+      // ==========================================
+      // DEFAULT ROUTE
+      // ==========================================
+
       {
         index: true,
         element: <Navigate to="/dashboard" replace />,
       },
 
-      // Authentication routes
+      // ==========================================
+      // AUTHENTICATION ROUTES
+      // ==========================================
+
       {
         element: <AuthLayout />,
         children: [
@@ -38,29 +46,37 @@ export const router = createBrowserRouter([
         ],
       },
 
-      // Application routes
+      // ==========================================
+      // PROTECTED APPLICATION ROUTES
+      // ==========================================
+
       {
-        element: <DashboardLayout />,
+        element: <ProtectedRoute />,
         children: [
           {
-            path: "dashboard",
-            element: <DashboardPage />,
-          },
-          {
-            path: "chat",
-            element: <ChatPage />,
-          },
-          {
-            path: "documents",
-            element: <DocumentsPage />,
-          },
-          {
-            path: "notes",
-            element: <NotesPage />,
-          },
-          {
-            path: "research",
-            element: <ResearchPage />,
+            element: <DashboardLayout />,
+            children: [
+              {
+                path: "dashboard",
+                element: <DashboardPage />,
+              },
+              {
+                path: "chat",
+                element: <ChatPage />,
+              },
+              {
+                path: "documents",
+                element: <DocumentsPage />,
+              },
+              {
+                path: "notes",
+                element: <NotesPage />,
+              },
+              {
+                path: "research",
+                element: <ResearchPage />,
+              },
+            ],
           },
         ],
       },

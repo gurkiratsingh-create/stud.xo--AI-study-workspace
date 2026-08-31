@@ -12,6 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 
 const navigation = [
+  {label : "Dashboard",
+   icon: BookOpen,
+   path: "/dashboard"},
   {
     label: "Chat",
     icon: MessageSquare,
