@@ -1,18 +1,22 @@
 import { useState } from "react";
 
+import {
+  Link,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-import { useHealth } from "@/features/dashboard/hooks/useHealth";
 import { useWorkspaces } from "@/features/dashboard/hooks/useWorkspaces";
 import { useCreateWorkspace } from "@/features/dashboard/hooks/useCreateWorkspace";
 
 function DashboardPage() {
-  const {
-    data: healthData,
-    isLoading: healthLoading,
-    isError: healthError,
-  } = useHealth();
+  const navigate = useNavigate();
+
+  const [searchParams, setSearchParams] =
+    useSearchParams();
 
   const {
     data: workspaceData,
@@ -26,8 +30,8 @@ function DashboardPage() {
   const [workspaceName, setWorkspaceName] =
     useState("");
 
-  const [showCreateForm, setShowCreateForm] =
-    useState(false);
+  const showCreateForm =
+    searchParams.get("create") === "true";
 
   async function handleCreateWorkspace(
     event: React.FormEvent<HTMLFormElement>,
@@ -41,12 +45,20 @@ function DashboardPage() {
     }
 
     try {
-      await createWorkspaceMutation.mutateAsync({
-        name,
-      });
+      const response =
+        await createWorkspaceMutation.mutateAsync({
+          name,
+        });
 
       setWorkspaceName("");
-      setShowCreateForm(false);
+      setSearchParams({});
+
+      /*
+       * Automatically open the newly created workspace.
+       */
+      navigate(
+        `/workspaces/${response.workspace.id}/notes`,
+      );
     } catch (error) {
       console.error(
         "Create workspace error:",
@@ -55,13 +67,19 @@ function DashboardPage() {
     }
   }
 
+  function toggleCreateForm() {
+    if (showCreateForm) {
+      setSearchParams({});
+    } else {
+      setSearchParams({ create: "true" });
+    }
+  }
+
   return (
     <div className="space-y-8 p-8">
-
       {/* ==========================================
           HEADER
       ========================================== */}
-
       <div>
         <p className="text-sm text-muted-foreground">
           Your learning workspace
@@ -72,243 +90,179 @@ function DashboardPage() {
         </h1>
 
         <p className="mt-2 text-muted-foreground">
-          What do you want to learn today?
+          Choose a workspace to continue learning.
         </p>
       </div>
 
-
       {/* ==========================================
-          API STATUS
+          WORKSPACE HEADER
       ========================================== */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold">
+            Your Workspaces
+          </h2>
 
-      <div className="rounded-xl border bg-card p-6">
-        <h2 className="font-semibold">
-          API Status
-        </h2>
-
-        {healthLoading && (
-          <p className="mt-2 text-sm text-muted-foreground">
-            Checking API...
+          <p className="text-sm text-muted-foreground">
+            Select a workspace to open your learning
+            tools.
           </p>
-        )}
+        </div>
 
-        {healthError && (
-          <p className="mt-2 text-sm text-red-500">
-            API unavailable
-          </p>
-        )}
-
-        {healthData && (
-          <p className="mt-2 text-sm text-green-500">
-            {healthData.service} —{" "}
-            {healthData.status}
-          </p>
-        )}
+        <Button onClick={toggleCreateForm}>
+          {showCreateForm
+            ? "Cancel"
+            : "+ Create Workspace"}
+        </Button>
       </div>
 
-
       {/* ==========================================
-          WORKSPACES
+          CREATE WORKSPACE
       ========================================== */}
+      {showCreateForm && (
+        <form
+          onSubmit={handleCreateWorkspace}
+          className="rounded-xl border bg-card p-6"
+        >
+          <div className="space-y-2">
+            <label
+              htmlFor="workspace-name"
+              className="text-sm font-medium"
+            >
+              Workspace name
+            </label>
 
-      <div>
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold">
-              Your Workspaces
-            </h2>
-
-            <p className="text-sm text-muted-foreground">
-              Workspaces you belong to.
-            </p>
+            <Input
+              id="workspace-name"
+              value={workspaceName}
+              onChange={(event) =>
+                setWorkspaceName(event.target.value)
+              }
+              placeholder="e.g. AI Research"
+              disabled={
+                createWorkspaceMutation.isPending
+              }
+              autoFocus
+            />
           </div>
 
+          {createWorkspaceMutation.isError && (
+            <p className="mt-2 text-sm text-red-500">
+              Failed to create workspace.
+            </p>
+          )}
+
           <Button
-            onClick={() =>
-              setShowCreateForm(
-                !showCreateForm,
-              )
+            type="submit"
+            className="mt-4"
+            disabled={
+              createWorkspaceMutation.isPending ||
+              !workspaceName.trim()
             }
           >
-            {showCreateForm
-              ? "Cancel"
-              : "+ Create Workspace"}
+            {createWorkspaceMutation.isPending
+              ? "Creating..."
+              : "Create Workspace"}
           </Button>
-        </div>
-
-
-        {/* ========================================
-            CREATE WORKSPACE FORM
-        ======================================== */}
-
-        {showCreateForm && (
-          <form
-            onSubmit={handleCreateWorkspace}
-            className="mb-6 rounded-xl border bg-card p-6"
-          >
-            <div className="space-y-2">
-              <label
-                htmlFor="workspace-name"
-                className="text-sm font-medium"
-              >
-                Workspace name
-              </label>
-
-              <Input
-                id="workspace-name"
-                value={workspaceName}
-                onChange={(event) =>
-                  setWorkspaceName(
-                    event.target.value,
-                  )
-                }
-                placeholder="e.g. AI Research"
-                disabled={
-                  createWorkspaceMutation.isPending
-                }
-              />
-            </div>
-
-            {createWorkspaceMutation.isError && (
-              <p className="mt-2 text-sm text-red-500">
-                Failed to create workspace.
-              </p>
-            )}
-
-            <Button
-              type="submit"
-              className="mt-4"
-              disabled={
-                createWorkspaceMutation.isPending ||
-                !workspaceName.trim()
-              }
-            >
-              {createWorkspaceMutation.isPending
-                ? "Creating..."
-                : "Create Workspace"}
-            </Button>
-          </form>
-        )}
-
-
-        {/* ========================================
-            LOADING
-        ======================================== */}
-
-        {workspacesLoading && (
-          <p className="text-sm text-muted-foreground">
-            Loading workspaces...
-          </p>
-        )}
-
-
-        {/* ========================================
-            ERROR
-        ======================================== */}
-
-        {workspacesError && (
-          <p className="text-sm text-red-500">
-            Failed to load workspaces.
-          </p>
-        )}
-
-
-        {/* ========================================
-            EMPTY STATE
-        ======================================== */}
-
-        {workspaceData &&
-          workspaceData.workspaces.length ===
-            0 && (
-            <div className="rounded-xl border border-dashed p-6">
-              <p className="font-medium">
-                No workspaces yet
-              </p>
-
-              <p className="mt-1 text-sm text-muted-foreground">
-                Create a workspace to get started.
-              </p>
-            </div>
-          )}
-
-
-        {/* ========================================
-            WORKSPACE CARDS
-        ======================================== */}
-
-        {workspaceData &&
-          workspaceData.workspaces.length >
-            0 && (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {workspaceData.workspaces.map(
-                (workspace) => (
-                  <div
-                    key={workspace.id}
-                    className="rounded-xl border bg-card p-6"
-                  >
-                    <h3 className="font-semibold">
-                      {workspace.name}
-                    </h3>
-
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Role: {workspace.role}
-                    </p>
-
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Created{" "}
-                      {new Date(
-                        workspace.createdAt,
-                      ).toLocaleDateString()}
-                    </p>
-                  </div>
-                ),
-              )}
-            </div>
-          )}
-      </div>
-
+        </form>
+      )}
 
       {/* ==========================================
-          FEATURES
+          LOADING
       ========================================== */}
+      {workspacesLoading && (
+        <p className="text-sm text-muted-foreground">
+          Loading workspaces...
+        </p>
+      )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {/* ==========================================
+          ERROR
+      ========================================== */}
+      {workspacesError && (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-6">
+          <p className="font-medium text-red-500">
+            Failed to load workspaces.
+          </p>
 
-        <div className="rounded-xl border bg-card p-6">
-          <h2 className="font-semibold">
-            AI Chat
-          </h2>
-
-          <p className="mt-2 text-sm text-muted-foreground">
-            Ask questions and learn with your AI
-            assistant.
+          <p className="mt-1 text-sm text-muted-foreground">
+            Please refresh the page or log in again.
           </p>
         </div>
+      )}
 
-        <div className="rounded-xl border bg-card p-6">
-          <h2 className="font-semibold">
-            Documents
-          </h2>
+      {/* ==========================================
+          EMPTY STATE
+      ========================================== */}
+      {workspaceData &&
+        workspaceData.workspaces.length === 0 && (
+          <div className="rounded-xl border border-dashed p-10 text-center">
+            <h2 className="font-semibold">
+              No workspaces yet
+            </h2>
 
-          <p className="mt-2 text-sm text-muted-foreground">
-            Upload and learn from your study
-            material.
-          </p>
-        </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Create your first workspace to get
+              started.
+            </p>
 
-        <div className="rounded-xl border bg-card p-6">
-          <h2 className="font-semibold">
-            Research
-          </h2>
+            <Button
+              className="mt-4"
+              onClick={() =>
+                setSearchParams({
+                  create: "true",
+                })
+              }
+            >
+              Create Workspace
+            </Button>
+          </div>
+        )}
 
-          <p className="mt-2 text-sm text-muted-foreground">
-            Search, understand and organize
-            knowledge.
-          </p>
-        </div>
+      {/* ==========================================
+          WORKSPACE CARDS
+      ========================================== */}
+      {workspaceData &&
+        workspaceData.workspaces.length > 0 && (
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {workspaceData.workspaces.map(
+              (workspace) => (
+                <Link
+                  key={workspace.id}
+                  to={`/workspaces/${workspace.id}/notes`}
+                  className="group rounded-xl border bg-card p-6 transition-all hover:-translate-y-0.5 hover:bg-muted/50 hover:shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <span className="text-lg">
+                        📚
+                      </span>
+                    </div>
 
-      </div>
+                    <span className="text-xs text-muted-foreground">
+                      {workspace.role}
+                    </span>
+                  </div>
 
+                  <h3 className="mt-5 font-semibold group-hover:text-primary">
+                    {workspace.name}
+                  </h3>
+
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Open workspace →
+                  </p>
+
+                  <p className="mt-4 text-xs text-muted-foreground">
+                    Created{" "}
+                    {new Date(
+                      workspace.createdAt,
+                    ).toLocaleDateString()}
+                  </p>
+                </Link>
+              ),
+            )}
+          </div>
+        )}
     </div>
   );
 }

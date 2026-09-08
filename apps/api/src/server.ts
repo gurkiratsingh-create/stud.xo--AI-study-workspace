@@ -6,7 +6,8 @@ import userRoutes from "./routes/user.routes.js";
 import healthRouter from "./routes/health.routes.js";
 import workspaceRoutes from "./routes/workspace.routes.js";
 import memberRoutes from "./routes/member.routes.js";
-
+import noteRoutes from "./routes/note.routes.js";
+import chatRoutes from "./routes/chat.routes.js";
 const app = express();
 
 const PORT = process.env.PORT || 4000;
@@ -22,7 +23,14 @@ app.use(
   "/api/workspaces/:id/members",
   memberRoutes,
 );
-
+app.use(
+  "/api/workspaces/:id/notes",
+  noteRoutes,
+);
+app.use(
+  "/api/workspaces/:id/chats",
+  chatRoutes,
+);
 app.listen(PORT, () => {
   console.log(`Stud.xo API running on http://localhost:${PORT}`);
 });
